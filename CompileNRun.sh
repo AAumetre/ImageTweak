@@ -1,0 +1,2 @@
+./Compile.sh
+./main
