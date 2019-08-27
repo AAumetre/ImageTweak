@@ -45,7 +45,8 @@ int main( int argc, char* argv[] ){
 
 
 	// Write an image file
-	new_img->writePPM( "new_test.ppm" );
+	// new_img->writePPM( "new_test.ppm" );
+	img->writePPM( "new_test.ppm" );
 	delete img;
         delete new_img;
         //delete sub_img;

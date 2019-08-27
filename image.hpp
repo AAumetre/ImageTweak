@@ -25,6 +25,7 @@ class Image{
 		int _height;
 		int _levels;
 		std::vector<unsigned char> _pixel_array;
+                std::vector< std::vector<unsigned char> > _pixel_layers;
 };
 
 class ImagePPM : public Image {

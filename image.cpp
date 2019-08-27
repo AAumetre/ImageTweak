@@ -29,7 +29,8 @@ std::vector<unsigned char> Image::getPixelValues( void ){
 
 // Takes a vector of vectors and fills it with square sub-images
 // TODO: manage not square confs
-void Image::splitImage( int cuts, std::vector< std::vector<unsigned char> >* storage_ra ){
+void Image::splitImage( int cuts,
+        std::vector< std::vector<unsigned char> >* storage_ra ){
 	if( _width%cuts!=0 || _height%cuts!=0 ){
 		std::cout << "Uneven cuts of the image, aborting." << std::endl;
 		exit( -1 );
@@ -144,7 +145,8 @@ ImagePPM::ImagePPM( std::vector< std::vector<unsigned char> >& raw_data,
 
 void ImagePPM::readPPM(){
         std::ifstream file_obj( _file, std::ios::binary  );
-        std::vector< unsigned char > buffer( std::istreambuf_iterator< char >( file_obj ), {} );
+        std::vector< unsigned char > buffer(
+                std::istreambuf_iterator< char >( file_obj ), {} );
         std::cout << "File " << _file
                         <<      " of size " << buffer.size()
                         << " was successfully opened." << std::endl;
@@ -152,8 +154,8 @@ void ImagePPM::readPPM(){
         std::cout << std::endl;
         int cursor_position = 0;
         if ( getBlock( buffer, cursor_position ) != "P6" ){
-                        std::cout << "Wrong file type." << std::endl;
-                        exit( -1 );
+            std::cout << "Wrong file type." << std::endl;
+            exit( -1 );
         }
         _width  = std::stoi( getBlock( buffer, cursor_position ) );
         _height = std::stoi( getBlock( buffer, cursor_position ) );
@@ -164,7 +166,16 @@ void ImagePPM::readPPM(){
 
         // Copy content into pixel_array
         for ( unsigned int i=cursor_position ; i<buffer.size() ; ++i ){
-                _pixel_array.push_back( buffer[ i ] );
+            _pixel_array.push_back( buffer[ i ] );
+        }
+       
+        _pixel_layers.push_back( {} );
+        _pixel_layers.push_back( {} );
+        _pixel_layers.push_back( {} );
+        for ( unsigned int i=cursor_position ; i<buffer.size() ; i+=3 ){
+            _pixel_layers[0].push_back( buffer[ i+0 ] );
+            _pixel_layers[1].push_back( buffer[ i+1 ] );
+            _pixel_layers[2].push_back( buffer[ i+2 ] );
         }
 }
 
@@ -179,10 +190,10 @@ void ImagePPM::writePPM( std::string new_file  ){
         output_file << _levels << "\n\0";
 
         // Write binary content
-        for( auto& pxl:_pixel_array ){
-                output_file << pxl;
+        for ( int i=0 ; i<_width*_height ; ++i ){
+            output_file << _pixel_layers[0][ i ];
+            output_file << _pixel_layers[1][ i ];
+            output_file << _pixel_layers[2][ i ];
         }
         output_file.close();
 }
-
-
