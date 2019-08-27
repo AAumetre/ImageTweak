@@ -37,16 +37,16 @@ int main( int argc, char* argv[] ){
                     distance = new_distance;
                 }
             }
-            std::cout << best_index << " ";
+            bits = ref_img[ best_index ].getPixelValues();
         }
-        std::cout << std::endl;
         
+        ImagePPM* new_img = new ImagePPM( image_ra, 512, 512, 255 );
 
 
 
 	// Write an image file
-	img->writePPM( "test.ppm" );
-	//sub_img->writePPM( "sub_test.ppm" );
+	new_img->writePPM( "new_test.ppm" );
 	delete img;
+        delete new_img;
         //delete sub_img;
 }

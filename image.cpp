@@ -3,6 +3,7 @@
 #include <fstream>
 #include <vector>
 #include <iterator>
+#include <cmath>
 
 #include "image.hpp"
 #include "file_utils.hpp"
@@ -20,6 +21,10 @@ void Image::setFileName( std::string file ){
 
 void Image::setFileType( std::string type ){
 	_type = type;
+}
+
+std::vector<unsigned char> Image::getPixelValues( void ){
+    return _pixel_array;
 }
 
 // Takes a vector of vectors and fills it with square sub-images
@@ -81,6 +86,11 @@ int Image::compareAbs( std::vector<unsigned char>& img ){
     return distance;
 }
 
+// Sets part of an image, from an image
+/*void Image::setImagePatch( Image& src_img, int x, int y ){
+        
+}*/
+
 /* ======================================================================
  * 		ImagePPM Implementation
  ======================================================================*/
@@ -90,13 +100,46 @@ ImagePPM::ImagePPM( std::string file ){
         readPPM();
 }
 
-ImagePPM::ImagePPM( std::vector<unsigned char>& raw_data, int width, int height, int levels ){
+ImagePPM::ImagePPM( std::vector<unsigned char>& raw_data,
+        int width, int height, int levels ){
     setFileName( "Raw data" );
     setFileType( "ppm" );
     _pixel_array = raw_data;
     _width = width;
     _height = height;
     _levels = levels;
+}
+
+ImagePPM::ImagePPM( std::vector< std::vector<unsigned char> >& raw_data,
+        int width, int height, int levels ){
+    setFileName( "" );
+    setFileType( "ppm" );
+    _width = width;
+    _height = height;
+    _levels = levels;
+
+    int cuts = int( std::sqrt( raw_data.size() ) );
+    int cut_size = _width/cuts;
+    int curr_index;
+    int curr_block;
+    int local_index;
+    for( int i=0 ; i<3*_width*_height ; ++i )
+        _pixel_array.push_back( 0 );
+    
+    for( int j=0 ; j<_height ; ++j ){
+        for( int i=0 ; i<3*_width ; ++i ){
+            curr_index = j*_width*3 + i;
+            curr_block = (j/cut_size)*cuts + ( i/3/cut_size);  
+            
+            int l_i = i - 3*(curr_block%cuts)*cut_size;
+            int l_j = j - (curr_block/cuts)*cut_size;
+            
+            local_index = l_j*3*cut_size + l_i;
+            // std::cout << "[" << l_i << "," << l_j << "] => " << local_index << " ";
+            _pixel_array[ curr_index ] =
+                raw_data[ curr_block ][ local_index ];
+        }
+    }
 }
 
 void ImagePPM::readPPM(){
