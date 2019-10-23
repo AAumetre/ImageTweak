@@ -1,2 +1,2 @@
 ./Compile.sh
-./main
+./ImgTweakr

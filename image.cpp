@@ -9,80 +9,95 @@
 #include "file_utils.hpp"
 
 void Image::addBrightness( int more ){
-        for( auto& pxl:_pixel_array ){
-                if( pxl+more > _levels ) pxl = _levels;
-                else pxl = pxl+more;
+    for( int i=0 ; i<3 ; ++i ){
+        for( auto& pxl : _pixel_layers[i] ){
+            if( pxl+more > _levels ) pxl = _levels;
+            else pxl = pxl+more;
         }
+    }
 }
 
 void Image::setFileName( std::string file ){
-	_file = file;
+    _file = file;
 }
 
 void Image::setFileType( std::string type ){
-	_type = type;
+    _type = type;
 }
 
-std::vector<unsigned char> Image::getPixelValues( void ){
-    return _pixel_array;
+ImgRA* Image::getPixelValues( void ){
+    return &_pixel_layers;
 }
 
 // Takes a vector of vectors and fills it with square sub-images
 // TODO: manage not square confs
-void Image::splitImage( int cuts,
-        std::vector< std::vector<unsigned char> >* storage_ra ){
-	if( _width%cuts!=0 || _height%cuts!=0 ){
-		std::cout << "Uneven cuts of the image, aborting." << std::endl;
-		exit( -1 );
-	}
+// TODO: to be updated for RGB layers
+std::vector< Image > Image::splitImage( int cuts ){
+    // Validity check
+    if( _width%cuts!=0 || _height%cuts!=0 ){
+	std::cout << "Uneven cuts of the image, aborting." << std::endl;
+	exit( -1 );
+    }
+    // Internal variables
     int cut_size_i = _width/cuts;
     int cut_size_j = _height/cuts;
     int curr_block = 0;
     int curr_index = 0;
     unsigned int n_block = cuts*cuts;
-    // Initialize vector
-    while( storage_ra->size() < n_block ){
-        storage_ra->push_back( {} );
+    
+    // Initialize Image vector
+    std::vector< Image > result;
+
+    for( unsigned int i=0 ; i<n_block ; ++i){
+        result.push_back( Image() );
     }
+    
+    // Blocks are numbered
+    for( int j=0 ; j<_height ; ++j ){
+         for( int i=0 ; i<_width ; ++i ){
+            curr_block = j/cut_size_j*cuts + i/cut_size_i;
+            curr_index = j*_width + i;
+            std::cout << "Block " << curr_block << " index " << curr_index << std::endl; 
 
-	for( int j=0 ; j<_height ; ++j ){
-        for( int i=0 ; i<3*_width ; ++i ){
-            curr_block = (j/cut_size_j)*cuts + ( i/3/cut_size_i);
-            curr_index = j*_width*3+i;
-
-            /* std::cout << "Block " << curr_block <<
-                   " index " << j*_width+i <<
-                   " (i,j): " << i << " : " << j << std::endl;*/
-            storage_ra->at( curr_block ).push_back(
-                        _pixel_array.at( curr_index ));
+            result[ curr_block ]._pixel_layers[0][curr_index] =
+                                            _pixel_layers[0][curr_index]; // Red
+            result[ curr_block ]._pixel_layers[1][curr_index] =
+                                            _pixel_layers[1][curr_index]; // Green
+            result[ curr_block ]._pixel_layers[2][curr_index] =
+                                            _pixel_layers[2][curr_index]; // Blue
         } 
     }
+
+    return result;
 }
 
 // Displays pixel values, range in number of pixels,
-// not in number of values
+// not in number of values [R, G, B]
 void Image::dumpValues( int start_index, int count ){
-    if( 3*(start_index+count) > int(_pixel_array.size()) ){
+    if( start_index+count > int(_pixel_layers[0].size()) ){
         std::cout << "Query out of range, aborting." << std::endl;
         exit( -1 );
     }
-    for( int i=3*start_index ; i<3*(start_index+count) ; i+=3 ){
+    for( int i=start_index ; i<(start_index+count) ; ++i ){
         std::cout << "["
-            << int(_pixel_array.at( i+0 )) << ", "
-            << int(_pixel_array.at( i+1 )) << ", "
-            << int(_pixel_array.at( i+2 )) << "]  ";
+            << int(_pixel_layers[0].at(i)) << ", "
+            << int(_pixel_layers[1].at(i)) << ", "
+            << int(_pixel_layers[2].at(i)) << "]  ";
     }
     std::cout << std::endl;
 }
 
 // Compares a vector of pixels values with the image and
 // returns a distance
-int Image::compareAbs( std::vector<unsigned char>& img ){
+int Image::compareAbs( ImgRA& img ){
     // TODO: check size !!!
     int distance = 0;
 
-    for( int i=0 ; i<3*_width*_height ; ++i ){
-        distance += abs( _pixel_array[i]-img[i] );
+    for( int c=0 ; c<3 ; ++c ){
+        for( int i=0 ; i<_width*_height ; ++i ){
+            distance += abs( _pixel_layers[c].at(i) - 
+                    img[c].at(i) );
+        }
     }
     return distance;
 }
@@ -101,17 +116,26 @@ ImagePPM::ImagePPM( std::string file ){
         readPPM();
 }
 
+// Creates an ImagePPM object, based on the raw data, which
+// is formated as : R G B R G B ...
 ImagePPM::ImagePPM( std::vector<unsigned char>& raw_data,
         int width, int height, int levels ){
     setFileName( "Raw data" );
     setFileType( "ppm" );
-    _pixel_array = raw_data;
     _width = width;
     _height = height;
     _levels = levels;
+
+    for( int i=0 ; i<3*(width*height) ; i+=3){
+        _pixel_layers[0].push_back( raw_data[ i+0 ] );
+        _pixel_layers[1].push_back( raw_data[ i+1 ] );
+        _pixel_layers[2].push_back( raw_data[ i+2 ] );
+    }
 }
 
-ImagePPM::ImagePPM( std::vector< std::vector<unsigned char> >& raw_data,
+// TODO: to be updated for RGB layers
+// Creates an ImagePPM object from pieces
+/*ImagePPM::ImagePPM( std::vector< std::vector<unsigned char> >& raw_data,
         int width, int height, int levels ){
     setFileName( "" );
     setFileType( "ppm" );
@@ -124,8 +148,11 @@ ImagePPM::ImagePPM( std::vector< std::vector<unsigned char> >& raw_data,
     int curr_index;
     int curr_block;
     int local_index;
-    for( int i=0 ; i<3*_width*_height ; ++i )
-        _pixel_array.push_back( 0 );
+    for( int i=0 ; i<3*_width*_height ; ++i ){
+        _pixel_layers[0].push_back( 0 );
+        _pixel_layers[1].push_back( 0 );
+        _pixel_layers[2].push_back( 0 );
+    }
     
     for( int j=0 ; j<_height ; ++j ){
         for( int i=0 ; i<3*_width ; ++i ){
@@ -141,42 +168,34 @@ ImagePPM::ImagePPM( std::vector< std::vector<unsigned char> >& raw_data,
                 raw_data[ curr_block ][ local_index ];
         }
     }
-}
+}*/
 
 void ImagePPM::readPPM(){
-        std::ifstream file_obj( _file, std::ios::binary  );
-        std::vector< unsigned char > buffer(
-                std::istreambuf_iterator< char >( file_obj ), {} );
-        std::cout << "File " << _file
-                        <<      " of size " << buffer.size()
-                        << " was successfully opened." << std::endl;
-        // Extract metadata
-        std::cout << std::endl;
-        int cursor_position = 0;
-        if ( getBlock( buffer, cursor_position ) != "P6" ){
-            std::cout << "Wrong file type." << std::endl;
-            exit( -1 );
-        }
-        _width  = std::stoi( getBlock( buffer, cursor_position ) );
-        _height = std::stoi( getBlock( buffer, cursor_position ) );
-        _levels = std::stoi( getBlock( buffer, cursor_position ) );
+    std::ifstream file_obj( _file, std::ios::binary  );
+    std::vector< unsigned char > buffer(
+            std::istreambuf_iterator< char >( file_obj ), {} );
+    std::cout << "File " << _file
+                    <<      " of size " << buffer.size()
+                    << " was successfully opened." << std::endl;
+    // Extract metadata
+    int cursor_position = 0;
+    if ( getBlock( buffer, cursor_position ) != "P6" ){
+        std::cout << "Wrong file type." << std::endl;
+        exit( -1 );
+    }
+    _width  = std::stoi( getBlock( buffer, cursor_position ) );
+    _height = std::stoi( getBlock( buffer, cursor_position ) );
+    _levels = std::stoi( getBlock( buffer, cursor_position ) );
 
-        std::cout << "PPM image of " << _width << "x" << _height <<
-                " with " << _levels << " levels." << std::endl;
-
-        // Copy content into pixel_array
-        for ( unsigned int i=cursor_position ; i<buffer.size() ; ++i ){
-            _pixel_array.push_back( buffer[ i ] );
-        }
-       
-        _pixel_layers.push_back( {} );
-        _pixel_layers.push_back( {} );
-        _pixel_layers.push_back( {} );
-        for ( unsigned int i=cursor_position ; i<buffer.size() ; i+=3 ){
-            _pixel_layers[0].push_back( buffer[ i+0 ] );
-            _pixel_layers[1].push_back( buffer[ i+1 ] );
-            _pixel_layers[2].push_back( buffer[ i+2 ] );
-        }
+    std::cout << "PPM image of " << _width << "x" << _height <<
+            " with " << _levels << " levels." << std::endl;
+    std::cout << std::endl;
+    // Copy content into pixel_array
+    for ( unsigned int i=cursor_position ; i<buffer.size() ; i+=3 ){
+        _pixel_layers[0].push_back( buffer[ i+0 ] );
+        _pixel_layers[1].push_back( buffer[ i+1 ] );
+        _pixel_layers[2].push_back( buffer[ i+2 ] );
+    }
 }
 
 void ImagePPM::writePPM( std::string new_file  ){

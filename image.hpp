@@ -1,6 +1,10 @@
 #pragma once
 
 #include <vector>
+#include <array>
+
+// Corresponds to the RGB layers of the image
+using ImgRA = std::array< std::vector<unsigned char>, 3 >;
 
 // TODO: have three separate layers to work with 
 class Image{
@@ -11,12 +15,11 @@ class Image{
 	public:
 		void setFileName( std::string file );
 		void setFileType( std::string type );
-                std::vector<unsigned char> getPixelValues( void );
+                ImgRA* getPixelValues( void );
                 void addBrightness( int more );
-		void splitImage( int cuts,
-                        std::vector< std::vector<unsigned char> >* storage_ra );
+                std::vector< Image > splitImage( int cuts );
                 void dumpValues( int start_index, int count );
-                int compareAbs( std::vector<unsigned char>& img );
+                int compareAbs( ImgRA& img );
 
 	protected:
 		std::string _file;
@@ -24,8 +27,8 @@ class Image{
 		int _width;
 		int _height;
 		int _levels;
-		std::vector<unsigned char> _pixel_array;
-                std::vector< std::vector<unsigned char> > _pixel_layers;
+		// std::vector<unsigned char> _pixel_array;
+                ImgRA _pixel_layers;
 };
 
 class ImagePPM : public Image {
