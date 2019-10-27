@@ -41,7 +41,6 @@ ImgRA* Image::getPixelValues( void ){
 
 // Takes a vector of vectors and fills it with square sub-images
 // TODO: manage not square confs
-// TODO: to be updated for RGB layers
 std::vector< Image > Image::splitImage( int cuts ){
     // Validity check
     if( _width%cuts!=0 || _height%cuts!=0 ){
@@ -68,13 +67,6 @@ std::vector< Image > Image::splitImage( int cuts ){
             curr_block = j/cut_size_j*cuts + i/cut_size_i;
             curr_index = j*_width + i;
 
-            /*if( curr_block == 0){
-                std::cout << "Block " << curr_block << " index " << curr_index << "  "; 
-                std::cout << "RGB: " << int(_pixel_layers[0][curr_index]) << " " << int(_pixel_layers[1][curr_index]) << " " << int(_pixel_layers[2][curr_index]) << "  ";
-            }*/
-
-            // Need to correctly index new values
-            // int() does not solve it
             result[ curr_block ].getPixelValues()->at(0).push_back(
                                             _pixel_layers[0][curr_index] ); // Red
             result[ curr_block ].getPixelValues()->at(1).push_back( 
@@ -83,8 +75,6 @@ std::vector< Image > Image::splitImage( int cuts ){
                                             _pixel_layers[2][curr_index] ); // Blue
           } 
     }
-    // std::cout << std::endl;
-    // result[0].dumpValues(0, 6);
     return result;
 }
 
@@ -119,10 +109,13 @@ int Image::compareAbs( ImgRA& img ){
     return distance;
 }
 
-// Sets part of an image, from an image
-/*void Image::setImagePatch( Image& src_img, int x, int y ){
-        
-}*/
+int Image::getWidth( void ){
+    return _width;
+}
+
+int Image::getHeight( void ){
+    return _height;
+}
 
 /* ======================================================================
  * 		ImagePPM Implementation
@@ -147,6 +140,57 @@ ImagePPM::ImagePPM( std::vector<unsigned char>& raw_data,
         _pixel_layers[0].push_back( raw_data[ i+0 ] );
         _pixel_layers[1].push_back( raw_data[ i+1 ] );
         _pixel_layers[2].push_back( raw_data[ i+2 ] );
+    }
+}
+
+ImagePPM::ImagePPM( std::vector< Image > blocks, int width, int height, int levels ){
+    _width = width;
+    _height = height;
+    _levels = levels;
+
+    // Check overall size
+    int cumulative_width = 0, cumulative_height = 0;
+    for( auto& block : blocks ){
+        cumulative_width +=     block.getWidth();
+        cumulative_height +=    block.getHeight();
+    }
+    cumulative_width  /= std::sqrt( blocks.size() );
+    cumulative_height /= std::sqrt( blocks.size() );
+    if( cumulative_width != _width || cumulative_height != _height){
+        std::cout << "Wrong blocks dimensions for desired size: " << _width << "x" << _height << ". Cumulative dimensions: " << cumulative_width << "x" << cumulative_height << std::endl; ;
+        exit( -1 );
+    }
+
+    // Recompose new array, based on provided ones
+    int cuts = int( std::sqrt( blocks.size() ) );
+    int cut_size = _width/cuts;
+    int curr_index;
+    int curr_block;
+    int local_index;
+    // Initialize array
+    for( int i=0 ; i<_width*_height ; ++i ){
+        _pixel_layers[0].push_back( 0 );
+        _pixel_layers[1].push_back( 0 );
+        _pixel_layers[2].push_back( 0 );
+    }
+    
+    for( int j=0 ; j<_height ; ++j ){
+        for( int i=0 ; i<_width ; ++i ){
+            curr_index = j*_width + i;
+            curr_block = (j/cut_size)*cuts + ( i/cut_size);  
+            
+            int l_i = i - ( curr_block%cuts )*cut_size;
+            int l_j = j - ( curr_block/cuts )*cut_size;
+            
+            local_index = l_j*cut_size + l_i;
+            // std::cout << "[" << l_i << "," << l_j << "] => " << local_index << " ";
+            _pixel_layers[0][ curr_index ] =
+                blocks[ curr_block ].getPixelValues()->at(0)[ local_index ];
+            _pixel_layers[1][ curr_index ] =
+                blocks[ curr_block ].getPixelValues()->at(1)[ local_index ];
+            _pixel_layers[2][ curr_index ] =
+                blocks[ curr_block ].getPixelValues()->at(2)[ local_index ];
+        }
     }
 }
 

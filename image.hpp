@@ -22,6 +22,8 @@ class Image{
                 std::vector< Image > splitImage( int cuts );
                 void dumpValues( int start_index, int count );
                 int compareAbs( ImgRA& img );
+                int getWidth( void );
+                int getHeight( void );
 
 	protected:
 		std::string _file;
@@ -41,6 +43,8 @@ class ImagePPM : public Image {
                         int width, int height, int levels );
                 ImagePPM( std::vector< std::vector<unsigned char> >& raw_data,
                         int width, int height, int levels );
+                ImagePPM( std::vector< Image > blocks, int width, int height, int levels );
+
                 ~ImagePPM( void ){}
 
 	public: 

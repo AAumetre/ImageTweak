@@ -43,20 +43,16 @@ int main( int argc, char* argv[] ){
                     distance = new_distance;
                 }
             }
-            std::cout << best_index << " ";
+            // std::cout << best_index << " ";
             block = ref_img[ best_index ];
         }
         
 
         // Need a new ImagePPM constructor from sub-images
-        // ImagePPM* new_img = new ImagePPM( image_ra, 512, 512, 255 );
-        // finir au-dessus
-
+        ImagePPM* new_img = new ImagePPM( blocks, 512, 512, 255 );
 
 	// Write an image file
-	// new_img->writePPM( "new_test.ppm" );
-	//img->writePPM( "new_test.ppm" );
+	new_img->writePPM( "new_test.ppm" );
 	delete img;
-        //delete new_img;
-        //delete sub_img;
+        delete new_img;
 }
