@@ -8,6 +8,16 @@
 #include "image.hpp"
 #include "file_utils.hpp"
 
+// Image constructor
+Image::Image( int width, int height ){
+    _width = width;
+    _height = height;
+    // Fill pixel array
+    /*for( int i=0 ; i<3 ; ++i){
+        _pixel_layers[ i ].resize( _width*_height );           
+    }*/
+}
+
 void Image::addBrightness( int more ){
     for( int i=0 ; i<3 ; ++i ){
         for( auto& pxl : _pixel_layers[i] ){
@@ -49,7 +59,7 @@ std::vector< Image > Image::splitImage( int cuts ){
     std::vector< Image > result;
 
     for( unsigned int i=0 ; i<n_block ; ++i){
-        result.push_back( Image() );
+        result.push_back( Image( cut_size_i, cut_size_j ) );
     }
     
     // Blocks are numbered
@@ -57,17 +67,24 @@ std::vector< Image > Image::splitImage( int cuts ){
          for( int i=0 ; i<_width ; ++i ){
             curr_block = j/cut_size_j*cuts + i/cut_size_i;
             curr_index = j*_width + i;
-            std::cout << "Block " << curr_block << " index " << curr_index << std::endl; 
 
-            result[ curr_block ]._pixel_layers[0][curr_index] =
-                                            _pixel_layers[0][curr_index]; // Red
-            result[ curr_block ]._pixel_layers[1][curr_index] =
-                                            _pixel_layers[1][curr_index]; // Green
-            result[ curr_block ]._pixel_layers[2][curr_index] =
-                                            _pixel_layers[2][curr_index]; // Blue
-        } 
+            /*if( curr_block == 0){
+                std::cout << "Block " << curr_block << " index " << curr_index << "  "; 
+                std::cout << "RGB: " << int(_pixel_layers[0][curr_index]) << " " << int(_pixel_layers[1][curr_index]) << " " << int(_pixel_layers[2][curr_index]) << "  ";
+            }*/
+
+            // Need to correctly index new values
+            // int() does not solve it
+            result[ curr_block ].getPixelValues()->at(0).push_back(
+                                            _pixel_layers[0][curr_index] ); // Red
+            result[ curr_block ].getPixelValues()->at(1).push_back( 
+                                            _pixel_layers[1][curr_index] ); // Green
+            result[ curr_block ].getPixelValues()->at(2).push_back(
+                                            _pixel_layers[2][curr_index] ); // Blue
+          } 
     }
-
+    // std::cout << std::endl;
+    // result[0].dumpValues(0, 6);
     return result;
 }
 

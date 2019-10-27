@@ -28,25 +28,29 @@ int main( int argc, char* argv[] ){
         ref_img.push_back( ImagePPM( "4.ppm" ) );
 	
         // Modify it
+        // /!!!!\ does not return, deletes memory
         std::vector< Image > blocks = img->splitImage( 64 );
-        //ImagePPM* sub_img = new ImagePPM( image_ra.at(1048), 8, 8, 255 );
-        
+
         // Compare each bit with the references
-        /*for( auto& bits : image_ra ){
-            long distance = 1e12, new_distance =9;
+        for( auto& block : blocks ){
+            long distance = 1e12, new_distance = 9;
             int best_index = 0;
-            for( int i=0 ; i<4 ; ++i ){
-                new_distance = ref_img[i].compareAbs( bits ); 
+            for( int i=0 ; i<4 ; ++i ){ // Needs to be set to the size of ref_img (4)
+                new_distance = ref_img[i].compareAbs( *block.getPixelValues() );
+                // std::cout << new_distance << " ";
                 if( new_distance < distance ){
                     best_index = i;
                     distance = new_distance;
                 }
             }
-            bits = ref_img[ best_index ].getPixelValues();
+            std::cout << best_index << " ";
+            block = ref_img[ best_index ];
         }
         
-        ImagePPM* new_img = new ImagePPM( image_ra, 512, 512, 255 );
-*/
+
+        // Need a new ImagePPM constructor from sub-images
+        // ImagePPM* new_img = new ImagePPM( image_ra, 512, 512, 255 );
+        // finir au-dessus
 
 
 	// Write an image file

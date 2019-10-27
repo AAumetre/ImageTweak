@@ -4,12 +4,14 @@
 #include <array>
 
 // Corresponds to the RGB layers of the image
-using ImgRA = std::array< std::vector<unsigned char>, 3 >;
+using ImgRA = std::array< std::vector< unsigned char >, 3 >;
 
 // TODO: have three separate layers to work with 
 class Image{
 	public:
 		Image( void ){}
+                Image( int width, int height );
+
 		~Image( void ){}
 
 	public:
