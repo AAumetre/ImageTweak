@@ -1,4 +1,7 @@
 #include <iostream>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_lib/stb_image.h"
+
 
 // Personal code
 #include "image.hpp"
@@ -19,9 +22,30 @@ int main( int argc, char* argv[] ){
 	// Read an image file
 	std::string file_name = "lena.ppm"; // 512x512
 	ImagePPM* img = new ImagePPM( file_name );
-	
+        
+        
+        // Read a jpeg image file
+        int jpg_width, jpg_height, jpg_bpp;
+        std::string jpg_file = "test_jpg.jpg";
+        uint8_t* jpg_image = stbi_load( jpg_file.c_str(), &jpg_width, &jpg_height, &jpg_bpp, 0); // 0 is a default value
+        std::cout << "The file " << jpg_file << " has been opened. It is " << jpg_width << " by " << jpg_height << " with " << jpg_bpp << " channels." << std::endl;
+        // Copy data & create PPM file
+        std::vector< unsigned char > copy_jpg;
+        for( int i=0 ; i<jpg_width*jpg_height ; ++i ){
+            copy_jpg.push_back( jpg_image[ i ]);
+        }
+        // Is the data in the vector valid ?
+        // Is it on 8 bits ?
+        ImagePPM* jpg_ppm = new ImagePPM( copy_jpg, jpg_width, jpg_height, jpg_bpp );
+        // Free jpg and save PPM
+        stbi_image_free( jpg_image );
+        jpg_ppm->writePPM( "jpg_copy.ppm" );
+        delete jpg_ppm;
+
+        
+        
         // Load reference images
-        std::vector< ImagePPM > ref_img;
+        /*std::vector< ImagePPM > ref_img;
         ref_img.push_back( ImagePPM( "1.ppm" ) );
         ref_img.push_back( ImagePPM( "2.ppm" ) );
         ref_img.push_back( ImagePPM( "3.ppm" ) );
@@ -45,7 +69,7 @@ int main( int argc, char* argv[] ){
             }
             // std::cout << best_index << " ";
             block = ref_img[ best_index ];
-        }
+        }*/
         
         // What's next?
         // => create some dummy basis in the form of 0-1 bitmaps
@@ -125,14 +149,14 @@ int main( int argc, char* argv[] ){
 
 
         // Need a new ImagePPM constructor from sub-images
-        ImagePPM* new_img = new ImagePPM( blocks, 512, 512, 255 );
+        // ImagePPM* new_img = new ImagePPM( blocks, 512, 512, 255 );
         ImagePPM* b_img = new ImagePPM( new_blocks, 512, 512, 255 );
         b_img->addBrightness( 40 );
 
 	// Write an image file
-	new_img->writePPM( "new_test.ppm" );
+	// new_img->writePPM( "new_test.ppm" );
 	b_img->writePPM( "b_test.ppm" );
 	delete img;
-        delete new_img;
+        // delete new_img;
         delete b_img;
 }
