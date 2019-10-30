@@ -94,6 +94,57 @@ void Image::dumpValues( int start_index, int count ){
     std::cout << std::endl;
 }
 
+// Creates an Image from a vector of smaller images, #patchwork
+Image::Image( std::vector< Image > blocks, int width, int height, int levels ){
+    _width = width;
+    _height = height;
+    _levels = levels;
+
+    // Check overall size
+    int cumulative_width = 0, cumulative_height = 0;
+    for( auto& block : blocks ){
+        cumulative_width +=     block.getWidth();
+        cumulative_height +=    block.getHeight();
+    }
+    cumulative_width  /= std::sqrt( blocks.size() );
+    cumulative_height /= std::sqrt( blocks.size() );
+    if( cumulative_width != _width || cumulative_height != _height){
+        std::cout << "Wrong blocks dimensions for desired size: " << _width << "x" << _height << ". Cumulative dimensions: " << cumulative_width << "x" << cumulative_height << std::endl; ;
+        exit( -1 );
+    }
+
+    // Recompose new array, based on provided ones
+    int cuts = int( std::sqrt( blocks.size() ) );
+    int cut_size = _width/cuts;
+    int curr_index;
+    int curr_block;
+    int local_index;
+    // Initialize array
+    for( int i=0 ; i<_width*_height ; ++i ){
+        _pixel_layers[0].push_back( 0 );
+        _pixel_layers[1].push_back( 0 );
+        _pixel_layers[2].push_back( 0 );
+    }
+    
+    for( int j=0 ; j<_height ; ++j ){
+        for( int i=0 ; i<_width ; ++i ){
+            curr_index = j*_width + i;
+            curr_block = (j/cut_size)*cuts + ( i/cut_size);  
+            
+            int l_i = i - ( curr_block%cuts )*cut_size;
+            int l_j = j - ( curr_block/cuts )*cut_size;
+            local_index = l_j*cut_size + l_i;
+            
+            _pixel_layers[0][ curr_index ] =
+                blocks[ curr_block ].getPixelValues()->at(0)[ local_index ];
+            _pixel_layers[1][ curr_index ] =
+                blocks[ curr_block ].getPixelValues()->at(1)[ local_index ];
+            _pixel_layers[2][ curr_index ] =
+                blocks[ curr_block ].getPixelValues()->at(2)[ local_index ];
+        }
+    }
+}
+
 // Compares a vector of pixels values with the image and
 // returns a distance
 int Image::compareAbs( ImgRA& img ){
@@ -142,94 +193,6 @@ ImagePPM::ImagePPM( std::vector<unsigned char>& raw_data,
         _pixel_layers[2].push_back( raw_data[ i+2 ] );
     }
 }
-
-ImagePPM::ImagePPM( std::vector< Image > blocks, int width, int height, int levels ){
-    _width = width;
-    _height = height;
-    _levels = levels;
-
-    // Check overall size
-    int cumulative_width = 0, cumulative_height = 0;
-    for( auto& block : blocks ){
-        cumulative_width +=     block.getWidth();
-        cumulative_height +=    block.getHeight();
-    }
-    cumulative_width  /= std::sqrt( blocks.size() );
-    cumulative_height /= std::sqrt( blocks.size() );
-    if( cumulative_width != _width || cumulative_height != _height){
-        std::cout << "Wrong blocks dimensions for desired size: " << _width << "x" << _height << ". Cumulative dimensions: " << cumulative_width << "x" << cumulative_height << std::endl; ;
-        exit( -1 );
-    }
-
-    // Recompose new array, based on provided ones
-    int cuts = int( std::sqrt( blocks.size() ) );
-    int cut_size = _width/cuts;
-    int curr_index;
-    int curr_block;
-    int local_index;
-    // Initialize array
-    for( int i=0 ; i<_width*_height ; ++i ){
-        _pixel_layers[0].push_back( 0 );
-        _pixel_layers[1].push_back( 0 );
-        _pixel_layers[2].push_back( 0 );
-    }
-    
-    for( int j=0 ; j<_height ; ++j ){
-        for( int i=0 ; i<_width ; ++i ){
-            curr_index = j*_width + i;
-            curr_block = (j/cut_size)*cuts + ( i/cut_size);  
-            
-            int l_i = i - ( curr_block%cuts )*cut_size;
-            int l_j = j - ( curr_block/cuts )*cut_size;
-            
-            local_index = l_j*cut_size + l_i;
-            // std::cout << "[" << l_i << "," << l_j << "] => " << local_index << " ";
-            _pixel_layers[0][ curr_index ] =
-                blocks[ curr_block ].getPixelValues()->at(0)[ local_index ];
-            _pixel_layers[1][ curr_index ] =
-                blocks[ curr_block ].getPixelValues()->at(1)[ local_index ];
-            _pixel_layers[2][ curr_index ] =
-                blocks[ curr_block ].getPixelValues()->at(2)[ local_index ];
-        }
-    }
-}
-
-// TODO: to be updated for RGB layers
-// Creates an ImagePPM object from pieces
-/*ImagePPM::ImagePPM( std::vector< std::vector<unsigned char> >& raw_data,
-        int width, int height, int levels ){
-    setFileName( "" );
-    setFileType( "ppm" );
-    _width = width;
-    _height = height;
-    _levels = levels;
-
-    int cuts = int( std::sqrt( raw_data.size() ) );
-    int cut_size = _width/cuts;
-    int curr_index;
-    int curr_block;
-    int local_index;
-    for( int i=0 ; i<3*_width*_height ; ++i ){
-        _pixel_layers[0].push_back( 0 );
-        _pixel_layers[1].push_back( 0 );
-        _pixel_layers[2].push_back( 0 );
-    }
-    
-    for( int j=0 ; j<_height ; ++j ){
-        for( int i=0 ; i<3*_width ; ++i ){
-            curr_index = j*_width*3 + i;
-            curr_block = (j/cut_size)*cuts + ( i/3/cut_size);  
-            
-            int l_i = i - 3*(curr_block%cuts)*cut_size;
-            int l_j = j - (curr_block/cuts)*cut_size;
-            
-            local_index = l_j*3*cut_size + l_i;
-            // std::cout << "[" << l_i << "," << l_j << "] => " << local_index << " ";
-            _pixel_array[ curr_index ] =
-                raw_data[ curr_block ][ local_index ];
-        }
-    }
-}*/
 
 void ImagePPM::readPPM(){
     std::ifstream file_obj( _file, std::ios::binary  );

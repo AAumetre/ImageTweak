@@ -1,6 +1,9 @@
 #include <iostream>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_lib/stb_image.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_lib/stb_image_write.h"
 
 
 // Personal code
@@ -20,27 +23,27 @@ int main( int argc, char* argv[] ){
 		std::cout << *argv[i] << std::endl;
 	}
 	// Read an image file
-	std::string file_name = "lena.ppm"; // 512x512
-	ImagePPM* img = new ImagePPM( file_name );
+	// std::string file_name = "lena.ppm"; // 512x512
+	// ImagePPM* img = new ImagePPM( file_name );
         
         
         // Read a jpeg image file
         int jpg_width, jpg_height, jpg_bpp;
-        std::string jpg_file = "test_jpg.jpg";
+        std::string jpg_file = "test2_jpg.jpg";
         uint8_t* jpg_image = stbi_load( jpg_file.c_str(), &jpg_width, &jpg_height, &jpg_bpp, 0); // 0 is a default value
         std::cout << "The file " << jpg_file << " has been opened. It is " << jpg_width << " by " << jpg_height << " with " << jpg_bpp << " channels." << std::endl;
         // Copy data & create PPM file
         std::vector< unsigned char > copy_jpg;
-        for( int i=0 ; i<jpg_width*jpg_height ; ++i ){
+        for( int i=0 ; i<3*jpg_width*jpg_height ; ++i ){
             copy_jpg.push_back( jpg_image[ i ]);
         }
         // Is the data in the vector valid ?
         // Is it on 8 bits ?
-        ImagePPM* jpg_ppm = new ImagePPM( copy_jpg, jpg_width, jpg_height, jpg_bpp );
+        ImagePPM* img = new ImagePPM( copy_jpg, jpg_width, jpg_height, 255 );
         // Free jpg and save PPM
         stbi_image_free( jpg_image );
-        jpg_ppm->writePPM( "jpg_copy.ppm" );
-        delete jpg_ppm;
+        // jpg_ppm->writePPM( "jpg_copy.ppm" );
+        // delete jpg_ppm;
 
         
         
@@ -115,7 +118,7 @@ int main( int argc, char* argv[] ){
                                                 1, 1, 1, 1 }};*/
 
 
-        std::vector< Image > new_blocks = img->splitImage( 128 ); // Careful here
+        std::vector< Image > new_blocks = img->splitImage( 640 ); // Careful here
         for( auto& block : new_blocks ){
             for( int i=0 ; i<3 ; ++i){
                 std::array< int, BASIS_SIZE+1 > scores; // Stores the index of the best last
@@ -146,17 +149,32 @@ int main( int argc, char* argv[] ){
             }
         }
 
+        // Build a new Image from blocks
+        Image filtered( new_blocks, jpg_width, jpg_height, 255 );
+        // Reconstruct a single array of interleaved pixels
+        /*uint8_t* filtered_data[ 3*jpg_width*jpg_height ];
+        for( int i=0 ; i<jpg_width*jpg_height ; ++i){
+                            
+        }*/
+        std::vector< uint8_t > filtered_data;
+        for( int i=0 ; i<jpg_width*jpg_height ; ++i ){
+            filtered_data.push_back( filtered.getPixelValues()->at(0)[ i ] ); // Red
+            filtered_data.push_back( filtered.getPixelValues()->at(1)[ i ] ); // Green
+            filtered_data.push_back( filtered.getPixelValues()->at(2)[ i ] ); // Blue
+        }
+
+        // file, w, h, channels, pure data, quality 0-100
+        stbi_write_jpg( "out.jpg", jpg_width, jpg_height, 3, filtered_data.data(), 100 );
+                
 
 
-        // Need a new ImagePPM constructor from sub-images
         // ImagePPM* new_img = new ImagePPM( blocks, 512, 512, 255 );
-        ImagePPM* b_img = new ImagePPM( new_blocks, 512, 512, 255 );
-        b_img->addBrightness( 40 );
+        // b_img->addBrightness( 40 );
 
 	// Write an image file
 	// new_img->writePPM( "new_test.ppm" );
-	b_img->writePPM( "b_test.ppm" );
+	// b_img->writePPM( "b_test.ppm" );
 	delete img;
         // delete new_img;
-        delete b_img;
+        // delete b_img;
 }

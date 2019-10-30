@@ -11,6 +11,7 @@ class Image{
 	public:
 		Image( void ){}
                 Image( int width, int height );
+                Image( std::vector< Image > blocks, int width, int height, int levels );
 
 		~Image( void ){}
 
@@ -43,7 +44,6 @@ class ImagePPM : public Image {
                         int width, int height, int levels );
                 ImagePPM( std::vector< std::vector<unsigned char> >& raw_data,
                         int width, int height, int levels );
-                ImagePPM( std::vector< Image > blocks, int width, int height, int levels );
 
                 ~ImagePPM( void ){}
 
